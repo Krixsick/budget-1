@@ -1,7 +1,10 @@
+import { Link } from "@tanstack/react-router";
+
 export function Navbar() {
   return (
     <div className="navbar bg-[#d5d5d5] shadow-sm">
       <div className="flex-1">
+        <Link to="/">home</Link>
         {/* <a className="btn btn-ghost text-xl">daisyUI</a> */}
       </div>
       <div className="flex gap-2">
@@ -28,10 +31,7 @@ export function Navbar() {
             className="menu menu-sm dropdown-content bg-[#d5d5d5] rounded-box z-1 mt-3 w-52 p-2 shadow"
           >
             <li>
-              <a className="justify-between">Profile</a>
-            </li>
-            <li>
-              <a>Settings</a>
+              <Link to="/settings">Settings</Link>
             </li>
             <li>
               <a>Logout</a>
