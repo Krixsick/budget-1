@@ -1,0 +1,19 @@
+:root {
+  --ref-primary-50: #e61967;
+  --ref-primary-40: #bc0050;
+  --ref-primary-30: #90003c;
+  --ref-primary-20: #660028;
+  --ref-primary-10: #3f0016;
+
+  --ref-secondary-50: #0081a7;
+  --ref-secondary-50: #006685;
+  --ref-secondary-50: #004d65;
+  --ref-secondary-50: #003547;
+  --ref-secondary-50: #001f2a;
+
+  --ref-third-50: #008b19;
+  --ref-third-50: #006e12;
+  --ref-third-50: #00530b;
+  --ref-third-50: #003a05;
+  --ref-third-50: #002202;
+}
