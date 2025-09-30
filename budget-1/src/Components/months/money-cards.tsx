@@ -17,7 +17,6 @@ export function ExpenseCard() {
     </div>
   );
 }
-
 export function IncomeCard() {
   return (
     <div className="min-w-[200px] w-[45%] min-h-[250px] h-[50%] max-h-[350px] bg-red-100 rounded-xl flex flex-col p-4 px-8">
