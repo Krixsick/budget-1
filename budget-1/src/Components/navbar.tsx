@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-
+import { useClerk } from "@clerk/clerk-react";
 export function Navbar() {
+  const { signOut } = useClerk();
   return (
     <div className="navbar bg-[#d5d5d5] shadow-sm">
       <div className="flex-1">
@@ -34,7 +35,9 @@ export function Navbar() {
               <Link to="/settings">Settings</Link>
             </li>
             <li>
-              <a>Logout</a>
+              <button onClick={() => signOut({ redirectUrl: "/profile" })}>
+                Sign out
+              </button>
             </li>
           </ul>
         </div>
