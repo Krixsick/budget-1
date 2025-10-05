@@ -16,18 +16,14 @@ function RouteComponent() {
   return (
     <>
       <MonthProvider></MonthProvider>
-      <div>
-        <CircleChart chartId={`chart-${month}`} month={month}></CircleChart>
-        <div className="flex p-2 gap-4">
+      <div className="w-full h-[100vh]">
+        <div className="p-4">
+          <CircleChart chartId={`chart-${month}`} month={month}></CircleChart>
+        </div>
+        <div className="flex justify-between w-full p-4">
           <ExpenseCard></ExpenseCard>
           <IncomeCard></IncomeCard>
         </div>
-        <PlusButton></PlusButton>
-        <h1 className="text-2xl font-bold capitalize">
-          {month} Finance Report
-        </h1>
-        <p>Showing data for {month}</p>
-        {/* Add your month-specific finance components here */}
       </div>
     </>
   );

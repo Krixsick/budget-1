@@ -29,9 +29,9 @@ const RootLayout = () => {
     <>
       {isSignedIn ? (
         <>
-          (<Navbar></Navbar>
+          <Navbar></Navbar>
           <Outlet />
-          <TanStackRouterDevtools />)
+          <TanStackRouterDevtools />
         </>
       ) : (
         <Outlet />
