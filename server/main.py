@@ -1,25 +1,19 @@
-import os
 from fastapi import FastAPI
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-import certifi
-from dotenv import load_dotenv
+from database import client
+from routes import transactions
 
-load_dotenv()
+app = FastAPI(title="Budget API", version="1.0.0")
 
-app = FastAPI()
-password = os.getenv("MONGODB_PASSWORD")
-uri = f"mongodb+srv://linusgao123_db_user:{password}@budget-1.xppznsk.mongodb.net/?retryWrites=true&w=majority&appName=budget-1"
-
-client = MongoClient(uri, server_api=ServerApi('1'), tlsCAFile=certifi.where())
+# Include routers
+app.include_router(transactions.router)
 
 @app.on_event("startup")
 async def startup_db_client():
     try:
         client.admin.command('ping')
-        print("Pinged your deployment. You successfully connected to MongoDB!")
+        print("✅ Successfully connected to MongoDB!")
     except Exception as e:
-        print(e)
+        print(f"❌ MongoDB connection error: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
@@ -27,4 +21,14 @@ async def shutdown_db_client():
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return {
+        "message": "Budget API is running!",
+        "endpoints": {
+            "add_transaction": "POST /transactions/add",
+            "all_transactions": "GET /transactions/all",
+            "expenses": "GET /transactions/expenses",
+            "income": "GET /transactions/income",
+            "summary": "GET /transactions/summary",
+            "clear": "DELETE /transactions/clear"
+        }
+    }
