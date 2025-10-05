@@ -6,13 +6,16 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface CircleChartProps {
   chartId: string;
   month: string;
+  expenseTotal: number;
+  incomeTotal: number;
 }
 
-export function CircleChart({ chartId, month }: CircleChartProps) {
-  // Example data - replace with real data from your backend/state
-  const incomeTotal = 3200;
-  const expenseTotal = 1400;
-
+export function CircleChart({
+  chartId,
+  month,
+  expenseTotal = 0,
+  incomeTotal = 0,
+}: CircleChartProps) {
   const data = {
     labels: ["Income", "Expenses"],
     datasets: [
