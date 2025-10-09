@@ -1,8 +1,17 @@
 from fastapi import FastAPI
 from database import client
 from routes import transactions
-
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI(title="Budget API", version="1.0.0")
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Vite default port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include routers
 app.include_router(transactions.router)

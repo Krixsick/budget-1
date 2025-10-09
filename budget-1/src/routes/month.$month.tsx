@@ -12,52 +12,89 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import * as React from "react";
+  useExpenses,
+  useIncome,
+  useAddTransaction,
+} from "../api/useTransactions";
 import { useForm } from "react-hook-form";
+import { Button } from "../Components/ui/button";
 export const Route = createFileRoute("/month/$month")({
   component: RouteComponent,
 });
 
-interface Expense {
-  name: string;
-  amount: number;
+interface ExpenseFormData {
+  category: string;
+  amount: string;
+}
+
+interface IncomeFormData {
+  category: string;
+  amount: string;
 }
 
 function RouteComponent() {
   const { month } = Route.useParams();
-  const [position, setPosition] = React.useState("bottom");
-  //Store
-  const [expenseList, setExpenseList] = useState<Expense[]>([]);
-  const [seeForm, setSeeForm] = useState(false);
+  const {
+    data: expensesData,
+    isLoading: expensesLoading,
+    error: expensesError,
+  } = useExpenses();
 
-  //react hook form
-  const { register, handleSubmit, reset } = useForm();
-  const onSubmit = (data: Expense) => {
-    const newExpense: Expense = {
-      name: data.name,
-      amount: parseFloat(data.amount) || 0,
-    };
-    setExpenseList([...expenseList, newExpense]);
-    reset();
-    setSeeForm(false);
+  const {
+    data: incomeData,
+    isLoading: incomeLoading,
+    error: incomeError,
+  } = useIncome();
+
+  const addTransactionMutation = useAddTransaction();
+  const [seeExpenseForm, setSeeExpenseForm] = useState(false);
+  const [seeIncomeForm, setSeeIncomeForm] = useState(false);
+
+  // React hook form for expenses
+  const {
+    register: registerExpense,
+    handleSubmit: handleSubmitExpense,
+    reset: resetExpense,
+  } = useForm<ExpenseFormData>();
+
+  // React hook form for income
+  const {
+    register: registerIncome,
+    handleSubmit: handleSubmitIncome,
+    reset: resetIncome,
+  } = useForm<IncomeFormData>();
+  const onSubmitExpense = async (data: ExpenseFormData) => {
+    try {
+      await addTransactionMutation.mutateAsync({
+        category: data.category,
+        amount: parseFloat(data.amount) || 0,
+        type: "expense",
+      });
+
+      resetExpense();
+      setSeeExpenseForm(false);
+    } catch (error) {
+      console.error("Error adding expense:", error);
+    }
   };
-  const expenseTotal = expenseList.reduce(
-    (sum, expense) => sum + expense.amount,
-    0
-  );
-  const incomeTotal = 0;
+
+  const onSubmitIncome = async (data: IncomeFormData) => {
+    try {
+      await addTransactionMutation.mutateAsync({
+        category: data.category,
+        amount: parseFloat(data.amount) || 0,
+        type: "income",
+      });
+
+      resetIncome();
+      setSeeIncomeForm(false);
+    } catch (error) {
+      console.error("Error adding income:", error);
+    }
+  };
 
   //Modal Operations
   const openExpenseModal = () => {
@@ -73,9 +110,10 @@ function RouteComponent() {
     modal?.showModal();
   };
 
-  useEffect(() => {
-    console.log(expenseList);
-  }, [expenseList]);
+  const expenseList = expensesData?.expenses || [];
+  const expenseTotal = expensesData?.total || 0;
+  const incomeList = incomeData?.income || [];
+  const incomeTotal = incomeData?.total || 0;
 
   return (
     <>
@@ -118,7 +156,7 @@ function RouteComponent() {
                 {expenseList.map((expense, index) => (
                   <TableRow key={index}>
                     <TableCell className="font-medium">
-                      {expense?.name}
+                      {expense?.category}
                     </TableCell>
                     <TableCell className="text-right font-bold">
                       ${expense?.amount}
@@ -138,32 +176,54 @@ function RouteComponent() {
             <div className="flex justify-center pt-2">
               <div
                 className="w-[35px] h-[35px] cursor-pointer flex justify-center items-center bg-[var(--ref-primary-50)] rounded-full"
-                onClick={() => setSeeForm(!seeForm)}
+                onClick={() => setSeeExpenseForm(!seeExpenseForm)}
               >
                 <Plus color="white" />
               </div>
-              {seeForm && (
+              {seeExpenseForm && (
                 <div className="w-full flex px-2 justify-between">
                   <form
-                    onSubmit={handleSubmit(onSubmit)}
+                    onSubmit={handleSubmitExpense(onSubmitExpense)}
                     className="w-full flex flex-col"
                   >
                     <div className="w-full flex justify-between p-2">
                       <Input
-                        {...register("name")}
+                        {...registerExpense("category")}
                         type="text"
-                        placeholder="Expense Name"
+                        placeholder="Category (e.g., groceries)"
+                        required
+                        disabled={addTransactionMutation.isPending}
                       />
                       <Input
-                        {...register("amount")}
-                        type="text"
+                        {...registerExpense("amount")}
+                        type="number"
+                        step="1"
                         placeholder="Amount"
+                        required
+                        disabled={addTransactionMutation.isPending}
                       />
                     </div>
-                    <button type="submit">Submit</button>
-                    <button onClick={() => setSeeForm(!seeForm)} type="button">
-                      Close
-                    </button>
+                    <Button
+                      type="submit"
+                      disabled={addTransactionMutation.isPending}
+                    >
+                      {addTransactionMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add Expense"
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => setSeeExpenseForm(false)}
+                      type="button"
+                      variant="outline"
+                      disabled={addTransactionMutation.isPending}
+                    >
+                      Cancel
+                    </Button>
                   </form>
                 </div>
               )}
@@ -177,8 +237,92 @@ function RouteComponent() {
         {/* Income Modal */}
         <dialog id={`income-modal-${month}`} className="modal">
           <div className="modal-box bg-white">
-            <h3 className="font-bold text-lg">Income Details</h3>
-            <p className="py-4">Sources for {month}</p>
+            <Table>
+              <TableCaption>A list of your income sources</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Category</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {incomeList.map((income) => (
+                  <TableRow key={income.id}>
+                    <TableCell className="font-medium">
+                      {income.category}
+                    </TableCell>
+                    <TableCell className="text-right font-bold">
+                      ${income.amount.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {incomeList.length > 0 && (
+                  <TableRow className="bg-[#F0F4F8]">
+                    <TableCell className="font-medium">Total</TableCell>
+                    <TableCell className="text-right font-bold">
+                      ${incomeTotal.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <div className="flex justify-center pt-2">
+              <div
+                className="w-[35px] h-[35px] cursor-pointer flex justify-center items-center bg-[var(--ref-primary-50)] rounded-full"
+                onClick={() => setSeeIncomeForm(!seeIncomeForm)}
+              >
+                <Plus color="white" />
+              </div>
+              {seeIncomeForm && (
+                <div className="w-full flex px-2 justify-between">
+                  <form
+                    onSubmit={handleSubmitIncome(onSubmitIncome)}
+                    className="w-full flex flex-col gap-2"
+                  >
+                    <div className="w-full flex gap-2 p-2">
+                      <Input
+                        {...registerIncome("category")}
+                        type="text"
+                        placeholder="Category (e.g., salary)"
+                        required
+                        disabled={addTransactionMutation.isPending}
+                      />
+                      <Input
+                        {...registerIncome("amount")}
+                        type="number"
+                        step="0.01"
+                        placeholder="Amount"
+                        required
+                        disabled={addTransactionMutation.isPending}
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        type="submit"
+                        disabled={addTransactionMutation.isPending}
+                      >
+                        {addTransactionMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          "Add Income"
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setSeeIncomeForm(false)}
+                        type="button"
+                        variant="outline"
+                        disabled={addTransactionMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
           </div>
           <form method="dialog" className="modal-backdrop">
             <button>close</button>

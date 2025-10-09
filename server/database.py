@@ -10,7 +10,7 @@ uri = f"mongodb+srv://linusgao123_db_user:{password}@budget-1.xppznsk.mongodb.ne
 client = MongoClient(uri, server_api=ServerApi('1'), tlsCAFile=certifi.where())
 
 # Database and collection
-db = client.budget_db
+db = client["budget-1"]
 transactions_collection = db.transactions
 
 def get_database():
