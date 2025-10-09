@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MonthProvider } from "../Components/home/dates";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CircleChart } from "../Components/months/circlechart";
 import { ExpenseCard, IncomeCard } from "../Components/months/money-cards";
 import {
@@ -12,15 +12,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   useExpenses,
   useIncome,
   useAddTransaction,
+  useClearTransactions,
+  useDeleteTransaction,
 } from "../api/useTransactions";
 import { useForm } from "react-hook-form";
 import { Button } from "../Components/ui/button";
+
 export const Route = createFileRoute("/month/$month")({
   component: RouteComponent,
 });
@@ -37,19 +40,24 @@ interface IncomeFormData {
 
 function RouteComponent() {
   const { month } = Route.useParams();
+
+  // Pass month parameter to hooks
   const {
     data: expensesData,
     isLoading: expensesLoading,
     error: expensesError,
-  } = useExpenses();
+  } = useExpenses(month);
 
   const {
     data: incomeData,
     isLoading: incomeLoading,
     error: incomeError,
-  } = useIncome();
+  } = useIncome(month);
 
   const addTransactionMutation = useAddTransaction();
+  const clearTransactionsMutation = useClearTransactions();
+  const deleteTransactionMutation = useDeleteTransaction();
+
   const [seeExpenseForm, setSeeExpenseForm] = useState(false);
   const [seeIncomeForm, setSeeIncomeForm] = useState(false);
 
@@ -66,12 +74,14 @@ function RouteComponent() {
     handleSubmit: handleSubmitIncome,
     reset: resetIncome,
   } = useForm<IncomeFormData>();
+
   const onSubmitExpense = async (data: ExpenseFormData) => {
     try {
       await addTransactionMutation.mutateAsync({
         category: data.category,
         amount: parseFloat(data.amount) || 0,
         type: "expense",
+        month: month, // Add month here
       });
 
       resetExpense();
@@ -87,12 +97,31 @@ function RouteComponent() {
         category: data.category,
         amount: parseFloat(data.amount) || 0,
         type: "income",
+        month: month, // Add month here
       });
 
       resetIncome();
       setSeeIncomeForm(false);
     } catch (error) {
       console.error("Error adding income:", error);
+    }
+  };
+
+  const handleClearMonth = async () => {
+    if (confirm(`Delete all transactions for ${month}?`)) {
+      try {
+        await clearTransactionsMutation.mutateAsync(month);
+      } catch (error) {
+        console.error("Error clearing transactions:", error);
+      }
+    }
+  };
+
+  const handleDeleteTransaction = async (transactionId: string) => {
+    try {
+      await deleteTransactionMutation.mutateAsync(transactionId);
+    } catch (error) {
+      console.error("Error deleting transaction:", error);
     }
   };
 
@@ -110,6 +139,15 @@ function RouteComponent() {
     modal?.showModal();
   };
 
+  if (expensesLoading || incomeLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="w-8 h-8 animate-spin" />
+        <span className="ml-2">Loading {month}'s budget...</span>
+      </div>
+    );
+  }
+
   const expenseList = expensesData?.expenses || [];
   const expenseTotal = expensesData?.total || 0;
   const incomeList = incomeData?.income || [];
@@ -119,6 +157,20 @@ function RouteComponent() {
     <>
       <MonthProvider></MonthProvider>
       <div className="w-full h-[100vh]">
+        {/* Add Clear Button */}
+        <div className="flex justify-between items-center p-4">
+          <h1 className="text-2xl font-bold capitalize">{month}</h1>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleClearMonth}
+            disabled={clearTransactionsMutation.isPending}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Clear {month}
+          </Button>
+        </div>
+
         <div className="p-4">
           <CircleChart
             chartId={`chart-${month}`}
@@ -137,38 +189,47 @@ function RouteComponent() {
             amount={expenseTotal}
           ></ExpenseCard>
         </div>
+
         {/* Expense Modal */}
         <dialog id={`expense-modal-${month}`} className="modal">
           <div className="modal-box bg-white">
             <Table>
-              <TableCaption>A list of your recent expenses</TableCaption>
+              <TableCaption>Expenses for {month}</TableCaption>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Expense Type</TableHead>
+                  <TableHead className="w-[100px]">Category</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* <TableRow>
-                  <TableCell className="font-medium">Shopping</TableCell>
-                  <TableCell className="text-right">$250.00</TableCell>
-                </TableRow> */}
-                {expenseList.map((expense, index) => (
-                  <TableRow key={index}>
+                {expenseList.map((expense) => (
+                  <TableRow key={expense.id}>
                     <TableCell className="font-medium">
                       {expense?.category}
                     </TableCell>
                     <TableCell className="text-right font-bold">
-                      ${expense?.amount}
+                      ${expense?.amount.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTransaction(expense.id)}
+                        disabled={deleteTransactionMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
-                {expenseList && (
+                {expenseList.length > 0 && (
                   <TableRow className="bg-[#F0F4F8]">
                     <TableCell className="font-medium">Total</TableCell>
                     <TableCell className="text-right font-bold">
-                      ${expenseTotal}
+                      ${expenseTotal.toFixed(2)}
                     </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -184,9 +245,9 @@ function RouteComponent() {
                 <div className="w-full flex px-2 justify-between">
                   <form
                     onSubmit={handleSubmitExpense(onSubmitExpense)}
-                    className="w-full flex flex-col"
+                    className="w-full flex flex-col gap-2"
                   >
-                    <div className="w-full flex justify-between p-2">
+                    <div className="w-full flex gap-2 p-2">
                       <Input
                         {...registerExpense("category")}
                         type="text"
@@ -197,33 +258,35 @@ function RouteComponent() {
                       <Input
                         {...registerExpense("amount")}
                         type="number"
-                        step="1"
+                        step="0.01"
                         placeholder="Amount"
                         required
                         disabled={addTransactionMutation.isPending}
                       />
                     </div>
-                    <Button
-                      type="submit"
-                      disabled={addTransactionMutation.isPending}
-                    >
-                      {addTransactionMutation.isPending ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Adding...
-                        </>
-                      ) : (
-                        "Add Expense"
-                      )}
-                    </Button>
-                    <Button
-                      onClick={() => setSeeExpenseForm(false)}
-                      type="button"
-                      variant="outline"
-                      disabled={addTransactionMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        type="submit"
+                        disabled={addTransactionMutation.isPending}
+                      >
+                        {addTransactionMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Adding...
+                          </>
+                        ) : (
+                          "Add Expense"
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => setSeeExpenseForm(false)}
+                        type="button"
+                        variant="outline"
+                        disabled={addTransactionMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </form>
                 </div>
               )}
@@ -234,15 +297,16 @@ function RouteComponent() {
           </form>
         </dialog>
 
-        {/* Income Modal */}
+        {/* Income Modal - same pattern */}
         <dialog id={`income-modal-${month}`} className="modal">
           <div className="modal-box bg-white">
             <Table>
-              <TableCaption>A list of your income sources</TableCaption>
+              <TableCaption>Income for {month}</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[100px]">Category</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -254,6 +318,16 @@ function RouteComponent() {
                     <TableCell className="text-right font-bold">
                       ${income.amount.toFixed(2)}
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTransaction(income.id)}
+                        disabled={deleteTransactionMutation.isPending}
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {incomeList.length > 0 && (
@@ -262,6 +336,7 @@ function RouteComponent() {
                     <TableCell className="text-right font-bold">
                       ${incomeTotal.toFixed(2)}
                     </TableCell>
+                    <TableCell></TableCell>
                   </TableRow>
                 )}
               </TableBody>

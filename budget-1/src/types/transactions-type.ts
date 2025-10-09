@@ -2,6 +2,7 @@ export interface Transaction {
   category: string;
   amount: number;
   type: "expense" | "income";
+  month: "string";
 }
 
 export interface TransactionResponse extends Transaction {
