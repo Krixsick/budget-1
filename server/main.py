@@ -16,6 +16,8 @@ app.add_middleware(
 # Include routers
 app.include_router(transactions.router)
 
+#testing 
+
 @app.on_event("startup")
 async def startup_db_client():
     try:
