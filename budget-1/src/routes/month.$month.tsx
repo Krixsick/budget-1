@@ -156,10 +156,9 @@ function RouteComponent() {
   return (
     <>
       <MonthProvider></MonthProvider>
-      <div className="w-full h-[100vh]">
+      <div className="w-full h-[900px]">
         {/* Add Clear Button */}
-        <div className="flex justify-between items-center p-4">
-          <h1 className="text-2xl font-bold capitalize">{month}</h1>
+        <div className="flex justify-end items-center p-4">
           <Button
             variant="destructive"
             size="sm"

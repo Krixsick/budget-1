@@ -29,7 +29,12 @@ export function MonthProvider() {
               to="/month/$month"
               params={{ month: month.toLowerCase() }}
             >
-              <Button variant={isActive ? "default" : "ghost"}>{month}</Button>
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                className="cursor-pointer"
+              >
+                {month}
+              </Button>
             </Link>
           );
         })}
