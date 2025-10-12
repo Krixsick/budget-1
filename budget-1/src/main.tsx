@@ -6,6 +6,7 @@ import "./index.css";
 import "../theme.css";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
+import { ClerkProvider } from "@clerk/clerk-react";
 
 // Create a new router instance
 const router = createRouter({ routeTree });
@@ -16,6 +17,12 @@ declare module "@tanstack/react-router" {
     router: typeof router;
   }
 }
+// Import your Publishable Key
+const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!PUBLISHABLE_KEY) {
+  throw new Error("Missing Publishable Key");
+}
 
 // Render the app
 const rootElement = document.getElementById("root")!;
@@ -24,7 +31,9 @@ if (!rootElement.innerHTML) {
   root.render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
+        <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+          <RouterProvider router={router} />
+        </ClerkProvider>
       </QueryClientProvider>
     </StrictMode>
   );
